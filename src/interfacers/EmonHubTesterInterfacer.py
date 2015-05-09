@@ -8,7 +8,7 @@ from emonhub_interfacer import EmonHubInterfacer
 
 class EmonHubTesterInterfacer(EmonHubInterfacer):
 
-    def __init__(self, name, mqtt_host="127.0.0.1", mqtt_port=1883):
+    def __init__(self, name):
         # Initialization
         super(EmonHubTesterInterfacer, self).__init__(name)
         
