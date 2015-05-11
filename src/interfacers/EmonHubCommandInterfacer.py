@@ -27,7 +27,6 @@ class EmonHubCommandInterfacer(EmonHubInterfacer):
         
 
     def run(self):
-
         last = time.time()
         # XXX Can we make this event driven instead?
         while not self.stop:
@@ -36,10 +35,9 @@ class EmonHubCommandInterfacer(EmonHubInterfacer):
             now = time.time()
             if (now-last) > int(self._settings['execute_every_secs']):
                 last = now
-                
                 s = self._settings
+                
                 withshell = s['withshell'].lower() in ['1', 'yes', 'y', 'true']
-
                 self._log.debug(str(s['execute_every_secs']) +"s loop")
                 rxc = Cargo.new_cargo()
                 rxc.nodeid = s['node']
@@ -55,8 +53,6 @@ class EmonHubCommandInterfacer(EmonHubInterfacer):
                     self._log.warn(str(e))
                 except (OSError) as e:
                     self._log.warn(str(e))
-
-
                       
             # Don't loop too fast
             time.sleep(0.1)
