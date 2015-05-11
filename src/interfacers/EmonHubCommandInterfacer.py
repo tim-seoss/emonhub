@@ -40,14 +40,15 @@ class EmonHubCommandInterfacer(EmonHubInterfacer):
                 withshell = s['withshell'].lower() in ['1', 'yes', 'y', 'true']
                 self._log.debug(str(s['execute_every_secs']) +"s loop")
                 rxc = Cargo.new_cargo()
-                rxc.nodeid = s['node']
+                rxc.nodeid = int(s['node'])
                 import subprocess32
                 try: 
                     # TODO, make timeout dynamic?  e.g. Accept double the average execution time, or loop time, which ever the least?
                     rxc.realdata = self.parser(subprocess32.check_output(s['command'], shell=withshell, timeout=float(s['timeout'])))
-                    for channel in s["pubchannels"]:
-                        dispatcher.send(channel, cargo=rxc)
-                        self._log.debug(str(rxc.uri) + " Sent to channel' : " + str(channel))
+                    if rxc.realdata:
+                        for channel in s["pubchannels"]:
+                            dispatcher.send(channel, cargo=rxc)
+                            self._log.debug(str(rxc.uri) + " Sent to channel' : " + str(channel))
                 # TODO record any partial output via e.output?
                 except (subprocess32.TimeoutExpired, subprocess32.CalledProcessError) as e:
                     self._log.warn(str(e))
@@ -65,12 +66,20 @@ class EmonHubCommandInterfacer(EmonHubInterfacer):
         data = []
 
 
-        for r in self._settings['command_regexes']:
-            for m in re.finditer(r, cmdoutput):
-                data.append(m.group(1))
-                self._log.debug('Regex "' + r + ' ... got data ' + m.group(1))
+        # FIXME - maybe we should support named regex matches using the (?P<name>...) syntax
+        # See https://docs.python.org/2/library/re.html?  In the meantime we just use the first bracketted
+        # match group
+        try:
+            for r in self._settings['command_regexes']:
+                for m in re.finditer(r, cmdoutput):
+                    self._log.debug('Regex "' + r + ' ... got data ' + m.group(1))
+                    data.append(float(m.group(1)))
 
-        return data
+            return data
+        except ValueError as e:
+            self._log.warn('Failed to convert matched string to float, discarding data: ' + cmdoutput);
+            return []
+
 
 
     def receiver(self, cargo):
