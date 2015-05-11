@@ -1,3 +1,11 @@
+emonHub (Tim Small's local variant)
+=======
+This tree is currently based on https://github.com/openenergymonitor/emonhub (emonpi branch).
+
+It contains an additional interfacer to execute an arbitary external system command, and parse it's output (e.g. for feeding into EmonCMS).
+
+Original README.md below:
+
 emonHub (emon-pi variant)
 =======
 This variant of emonhub is based on [@pb66 Paul Burnell's](https://github.com/pb66) experimental branch adding: 
