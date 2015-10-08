@@ -19,7 +19,7 @@ class EmonHubCommandInterfacer(EmonHubInterfacer):
             'pubchannels': ['ch2'],
             'execute_every_secs': 30,
             'timeout': 8,
-            'withshell': True,
+            'withshell': 'y',
             'command': 'echo "Total Power = 1234"',
             'command_regexes': ['Total Power\s*=\s([0-9\.,]+)'],
             'node': 31,
