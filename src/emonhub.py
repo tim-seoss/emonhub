@@ -9,6 +9,7 @@
 
 """
 
+from __future__ import print_function, division
 import sys
 import time
 import logging
@@ -16,6 +17,7 @@ import logging.handlers
 import signal
 import argparse
 import pprint
+import os
 try:
       import pymodbus
       pymodbus_found = True
@@ -28,6 +30,19 @@ try:
 except ImportError:
       bluetooth_found = False
 
+if os.getenv('NOTIFY_SOCKET'):
+    try:
+        import sdnotify
+        SDNOTIFY = True
+    except ImportError:
+        print("Looks like we're expected to implement sd_notify(3). Maybe:")
+        print("***")
+        print("apt install python-sdnotify")
+        print("***")
+        print("?")
+        raise
+else:
+    SDNOTIFY = False
 
 import emonhub_setup as ehs
 import interfacers.emonhub_interfacer as ehi
@@ -124,6 +139,15 @@ class EmonHub(object):
         # Set signal handler to catch SIGINT and shutdown gracefully
         signal.signal(signal.SIGINT, self._sigint_handler)
 
+        # Inform systemd that we're up and running (if appropriate):
+        if SDNOTIFY:
+            systemd_notifier = sdnotify.SystemdNotifier()
+            systemd_notifier.notify("READY=1")
+            watchdog_last_notify_time = time.time()
+            watchdog_secs = 9
+            systemd_notifier.notify("WATCHDOG_USEC=" + str(watchdog_secs * 1000000))
+
+
         # Until asked to stop
         while not self._exit:
 
@@ -138,6 +162,11 @@ class EmonHub(object):
                 if not I.isAlive():
                     #I.start()
                     self._log.warning(I.name + " thread is dead") # had to be restarted")
+
+            if SDNOTIFY and ((time.time() - watchdog_last_notify_time) > (watchdog_secs / 2)):
+                self._log.debug("watchdog heartbeat")
+                systemd_notifier.notify("WATCHDOG=1")
+                watchdog_last_notify_time = time.time()
 
             # Sleep until next iteration
             time.sleep(0.2)
