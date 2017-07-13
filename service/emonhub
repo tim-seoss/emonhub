@@ -25,6 +25,12 @@ SYSCONF_PATH=/etc/default/
 # If there's no configuration file, die!!
 [ ! -f $SYSCONF_PATH$NAME ] && echo "Fatal: cannot find $SYSCONF_FILE$NAME config file!" && exit 1
 
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.2-14) to ensure that this file is present
+# and status_of_proc is working.
+
+. /lib/lsb/init-functions
+
 # Pull in the config settings and echo them out for easy troubleshooting.
 . $SYSCONF_PATH$NAME
 
@@ -60,11 +66,6 @@ esac
 . /lib/init/vars.sh
 # Override VERBOSE setting
 VERBOSE=yes
-
-# Define LSB log_* functions.
-# Depend on lsb-base (>= 3.2-14) to ensure that this file is present
-# and status_of_proc is working.
-. /lib/lsb/init-functions
 
 #
 # Function that starts the daemon/service
