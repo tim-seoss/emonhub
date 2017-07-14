@@ -3,9 +3,17 @@
 # Edit this to configure the parameters used in
 # the /etc/init.d/emonhub script.
 
+# n.b. The emonhub install script currently overwrites
+# this file, but creates a backup.
+
 # This file should be deployed to /etc/default/emonhub
 # unless you have edited the init.d file to give an
 # alternate SYSCONF_PATH
+
+# If started from the default systemd service file,
+# the optional file /etc/default/emonhub.local
+# is used after this file, and will override any
+# settings defined here.
 
 # Specify the directory in which emonhub.py is found:
 EMONHUB_PATH=/usr/share/emonhub/
@@ -14,4 +22,28 @@ EMONHUB_PATH=/usr/share/emonhub/
 EMONHUB_CONFIG=/home/pi/data/emonhub.conf
 
 # Specify the full log file path:
+# (not used with systemd see below for alternative)
 EMONHUB_LOG=/var/log/emonhub/emonhub.log
+
+# With systemd, emonhub uses the journald service to log
+# messages by default, you can use commands such as:
+#
+# journalctl -u emonhub -f
+#
+# ... to follow log file output.  See:
+#
+# https://www.digitalocean.com/community/tutorials/how-to-use-journalctl-to-view-and-manipulate-systemd-logs
+#
+# for more options.
+#
+# If you wish to override this, and still use a separate log
+# file, then you may use the commented out directive below
+#
+# It's recommended that you place this directive in
+# /etc/default/emonhub.local to prevent the emonhub git
+# repository 'install' script clobbering your changes.
+#
+# You should ensure this log file exists and is writable by
+# the emonhub user.
+#
+#SYSTEMD_EXTRA_ARGS="--logfile /var/log/emonhub/emonhub.log"
