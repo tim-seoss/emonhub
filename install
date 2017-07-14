@@ -20,9 +20,10 @@ INST_PATH=/usr/share/emonhub
 sudo rm -r -f $INST_PATH
 sudo ln -s $GIT_PATH/src $INST_PATH
 
-### link init script
-sudo rm -f /etc/init.d/emonhub
-sudo ln -s $GIT_PATH/service/emonhub /etc/init.d/emonhub
+### install init script stub
+sudo install ${GIT_PATH}/service/emonhub.stub /etc/init.d/emonhub
+### modify stub script to call script in github dir
+echo ". ${GIT_PATH}/service/emonhub \$@" >> /etc/init.d/emonhub
 
 CONFDEF="${GIT_PATH}/conf/default/emonhub"
 
@@ -33,14 +34,46 @@ fi
 
 ### create folder and move settings file (unless it exists already)
 if [ ! -f /home/pi/data/emonhub.conf ] ; then
-  {
-    sudo mv $GIT_PATH/conf/emonpi.default.emonhub.conf /home/pi/data/emonhub.conf
-  }
+    sudo install -v $GIT_PATH/conf/emonpi.default.emonhub.conf /home/pi/data/emonhub.conf
 fi
 
-# launch at start-ip
+# launch at start-up (SysV init)
 sudo update-rc.d emonhub defaults 99
 
 
 ### create "emonhub" user
 sudo useradd -M -r -G dialout,tty -c "emonHub user" emonhub
+
+### Install systemd unit file regardless, in case the host is switched to
+### systemd in the future
+sudo install --compare $GIT_PATH/service/emonhub.service /etc/systemd/system/
+
+# FIXME is this check is Debian specific?  Does this matter?
+INITDEST=$( readlink /sbin/init )
+if test "${INITDEST#*systemd}" != "systemd" ; then
+    sudo systemctl daemon-reload
+    sleep 1 # daemon-reload is not instant apparently
+
+    # launch at start-up (systemd)
+    sudo systemctl enable emonhub.service && echo 'systemd unit enabled.' \
+        && echo 'Start manually with:' \
+        && echo \
+        && echo 'systemctl start emonhub.service' \
+        && echo \
+        && echo '...or if updating, restart with:' \
+        && echo \
+        && echo 'systemctl restart emonhub.service' \
+        && echo \
+        && echo 'Log output can be followed with:' \
+        && echo \
+        && echo 'jounalctl -u emonhub -f' \
+        && echo
+    if [ -f /var/run/emonhub.pid ] ; then
+        echo '*** IMPORTANT ***'
+	echo 'use:'
+	echo
+	echo "sudo /bin/sh -c '( start-stop-daemon --stop --retry=INT/30/KILL/5 --pidfile /var/run/emonhub.pid && rm /var/run/emonhub.pid )'"
+	echo
+	echo 'to stop the previously running emonhub instance prior to systemd unit file installation'
+    fi
+fi
