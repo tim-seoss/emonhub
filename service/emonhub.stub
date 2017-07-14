@@ -1,0 +1,30 @@
+#! /bin/sh
+
+###
+#
+#  This code is released under the GNU Affero General Public License.
+#
+#  OpenEnergyMonitor project:
+#  http://openenergymonitor.org
+#
+###
+
+### BEGIN INIT INFO
+# Provides:          emonhub
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start/stop emonHub
+### END INIT INFO
+
+###
+#
+#  This version of the init script calls into the github directory,
+#  this is necessary because the Debian systemd diversions (which call
+#  the systemd operations on the systemd unit file instead) only operate
+#  on scripts which are installed in /etc/init.d - symlinks in that dir
+#  don't count...
+#
+###
+
