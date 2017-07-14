@@ -1,0 +1,33 @@
+# This systemd unit file may be manually installed in
+# /etc/systemd/system
+# Please make edits (overrides, etc.) with:
+#
+# systemctl edit emonhub
+#
+# ...to ensure your changes are not lost in future.
+#
+[Unit]
+Description=Open Energy Monitor emonHub
+After=network.target
+
+[Service]
+User=emonhub
+StandardOutput=journal
+Environment=NAME=emonhub
+Environment=DAEMONUSER=emonhub
+Environment=SYSTEMD_EXTRA_ARGS=
+EnvironmentFile=/etc/default/emonhub
+EnvironmentFile=-/etc/default/emonhub.local
+ExecStartPre=/bin/sh -c "[ -f $EMONHUB_CONFIG ] || ( /bin/echo Fatal: cannot find $EMONHUB_CONFIG && exit 1 ) >&2"
+ExecStartPre=/bin/sh -c "[ -f $EMONHUB_PATH$NAME.py ] || ( echo 'Fatal: cannot find $EMONHUB_PATH$NAME.py' && exit 1 ) >&2"
+ExecStartPre=/bin/sh -c '[ -f ${EMONHUB_LOG} ] && ( tail ${EMONHUB_LOG} | grep -q journald ) || ( expr "x${SYSTEMD_EXTRA_ARGS}" : 'x.*--logfile' > /dev/null || echo "emonhub logs to journald by default with systemd see /etc/default/emonhub" >> ${EMONHUB_LOG} )'
+ExecStart=/usr/bin/python ${EMONHUB_PATH}${NAME}.py --config-file $EMONHUB_CONFIG $SYSTEMD_EXTRA_ARGS
+Restart=on-failure
+RestartPreventExitStatus=255
+RestartSec=15s
+# This is recommended, but requires the python sdnotify package to be
+# available e.g. with the python-sdnotify Debian package for python 2.7
+Type=notify
+
+[Install]
+WantedBy=multi-user.target
