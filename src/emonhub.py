@@ -139,13 +139,21 @@ class EmonHub(object):
         # Set signal handler to catch SIGINT and shutdown gracefully
         signal.signal(signal.SIGINT, self._sigint_handler)
 
-        # Inform systemd that we're up and running (if appropriate):
         if SDNOTIFY:
             systemd_notifier = sdnotify.SystemdNotifier()
-            systemd_notifier.notify("READY=1")
+            watchdog_secs = 0.0
             watchdog_last_notify_time = time.time()
-            watchdog_secs = 9
-            systemd_notifier.notify("WATCHDOG_USEC=" + str(watchdog_secs * 1000000))
+            hb_ok = True
+            hb_require_all_threads = False
+            if 'systemd_heartbeat_require_all_threads' in setup.settings['hub']:
+                if setup.settings['hub']['systemd_heartbeat_require_all_threads'] == 'yes':
+                    hb_require_all_threads = True
+            # Inform systemd that we're up and running
+            systemd_notifier.notify("READY=1")
+            # Start watchdog running:
+            if 'systemd_watchdog_timeout_secs' in setup.settings['hub']:
+                watchdog_secs = float(setup.settings['hub']['systemd_watchdog_timeout_secs'])
+                systemd_notifier.notify("WATCHDOG_USEC=" + str(int(watchdog_secs * 1000000)))
 
 
         # Until asked to stop
@@ -162,11 +170,18 @@ class EmonHub(object):
                 if not I.isAlive():
                     #I.start()
                     self._log.warning(I.name + " thread is dead") # had to be restarted")
+                    if SDNOTIFY and hb_require_all_threads:
+                        hb_ok = False
 
-            if SDNOTIFY and ((time.time() - watchdog_last_notify_time) > (watchdog_secs / 2)):
-                self._log.debug("watchdog heartbeat")
-                systemd_notifier.notify("WATCHDOG=1")
-                watchdog_last_notify_time = time.time()
+            # Issue a heatbeat when we are more than 50% through a wd timeout period
+            if SDNOTIFY and (time.time() - watchdog_last_notify_time) > (watchdog_secs / 2):
+                if hb_ok:
+                    self._log.debug("Watchdog heartbeat")
+                    systemd_notifier.notify("WATCHDOG=1")
+                    watchdog_last_notify_time = time.time()
+                else:
+                    self._log.debug("Won't heartbeat - state bad")
+
 
             # Sleep until next iteration
             time.sleep(0.2)
