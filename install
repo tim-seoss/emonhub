@@ -34,7 +34,7 @@ fi
 
 ### create folder and move settings file (unless it exists already)
 if [ ! -f /home/pi/data/emonhub.conf ] ; then
-    sudo install -v $GIT_PATH/conf/emonpi.default.emonhub.conf /home/pi/data/emonhub.conf
+    sudo install -m 644 -v $GIT_PATH/conf/emonpi.default.emonhub.conf /home/pi/data/emonhub.conf
 fi
 
 # launch at start-up (SysV init)
