@@ -23,7 +23,7 @@ sudo ln -s $GIT_PATH/src $INST_PATH
 ### install init script stub
 sudo install ${GIT_PATH}/service/emonhub.stub /etc/init.d/emonhub
 ### modify stub script to call script in github dir
-echo ". ${GIT_PATH}/service/emonhub \$@" >> /etc/init.d/emonhub
+sudo /bin/sh -c "echo '. ${GIT_PATH}/service/emonhub \$@' >> /etc/init.d/emonhub"
 
 CONFDEF="${GIT_PATH}/conf/default/emonhub"
 
