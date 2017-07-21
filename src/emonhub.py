@@ -155,9 +155,9 @@ class EmonHub(object):
                     self._log.warn("WATCHDOG_USEC set in systemd unit file (See WatchdogSec= entry in systemd.service man page).")
                     self._log.warn("Older systemd versions don't support changing this value with sd_notify()")
                     self._log.warn("Ignoring 'systemd_watchdog_timeout_secs = " + \
-                            setup.settings['hub']['systemd_watchdog_timeout_secs'] + "' in emonhub.conf")
-                self._log.warn("and using WATCHDOG_USEC=" + watchdog_env + \
-                        " (" + str(watchdog_env_secs) + "s) from systemd unit file instead...")
+                            setup.settings['hub']['systemd_watchdog_timeout_secs'] + "' in emonhub.conf and instead...")
+                self._log.warn("Using WATCHDOG_USEC=" + watchdog_env + \
+                        " (" + str(watchdog_env_secs) + "s) from systemd unit file.")
                 watchdog_secs = watchdog_env_secs
             else:
                 if 'systemd_watchdog_timeout_secs' in setup.settings['hub']:
