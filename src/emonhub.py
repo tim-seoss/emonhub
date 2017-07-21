@@ -140,20 +140,43 @@ class EmonHub(object):
         signal.signal(signal.SIGINT, self._sigint_handler)
 
         if SDNOTIFY:
+
+
             systemd_notifier = sdnotify.SystemdNotifier()
-            watchdog_secs = 0.0
-            watchdog_last_notify_time = time.time()
-            hb_ok = True
-            hb_require_all_threads = False
-            if 'systemd_heartbeat_require_all_threads' in setup.settings['hub']:
-                if setup.settings['hub']['systemd_heartbeat_require_all_threads'] == 'yes':
-                    hb_require_all_threads = True
             # Inform systemd that we're up and running
+            self._log.debug("sd_notify() service startup OK (READY=1)")
             systemd_notifier.notify("READY=1")
-            # Start watchdog running:
-            if 'systemd_watchdog_timeout_secs' in setup.settings['hub']:
-                watchdog_secs = float(setup.settings['hub']['systemd_watchdog_timeout_secs'])
-                systemd_notifier.notify("WATCHDOG_USEC=" + str(int(watchdog_secs * 1000000)))
+
+            watchdog_secs = 30.0 # default watchdog timeout interval
+            watchdog_env = os.getenv('WATCHDOG_USEC')
+            if watchdog_env:
+                watchdog_env_secs = int(watchdog_env) / 1000000
+                if 'systemd_watchdog_timeout_secs' in setup.settings['hub']:
+                    self._log.warn("WATCHDOG_USEC set in systemd unit file (See WatchdogSec= entry in systemd.service man page).")
+                    self._log.warn("Older systemd versions don't support changing this value with sd_notify()")
+                    self._log.warn("Ignoring 'systemd_watchdog_timeout_secs = " + \
+                            setup.settings['hub']['systemd_watchdog_timeout_secs'] + "' in emonhub.conf")
+                self._log.warn("and using WATCHDOG_USEC=" + watchdog_env + \
+                        " (" + str(watchdog_env_secs) + "s) from systemd unit file instead...")
+                watchdog_secs = watchdog_env_secs
+            else:
+                if 'systemd_watchdog_timeout_secs' in setup.settings['hub']:
+                    watchdog_secs = float(setup.settings['hub']['systemd_watchdog_timeout_secs'])
+            if (watchdog_secs > 0.0):
+                watchdog_last_notify_time = time.time()
+                hb_ok = True
+                hb_require_all_threads = True
+                if 'systemd_heartbeat_require_all_threads' in setup.settings['hub']:
+                    if setup.settings['hub']['systemd_heartbeat_require_all_threads'] != 'yes':
+                        hb_require_all_threads = False
+                # Start watchdog running:
+                watchdog_setup = "WATCHDOG_USEC=" + str(int(watchdog_secs * 1000000))
+                self._log.debug("sd_notify() sending: " + watchdog_setup)
+                systemd_notifier.notify(watchdog_setup)
+                systemd_notifier.notify("WATCHDOG=1")
+            else:
+                self._log.debug("sd_notify() watchdog disabled with 'systemd_watchdog_timeout_secs' setting = " + str(watchdog_secs))
+
 
 
         # Until asked to stop
@@ -174,13 +197,18 @@ class EmonHub(object):
                         hb_ok = False
 
             # Issue a heatbeat when we are more than 50% through a wd timeout period
-            if SDNOTIFY and (time.time() - watchdog_last_notify_time) > (watchdog_secs / 2):
+            if SDNOTIFY and watchdog_secs > 0.0 and (time.time() - watchdog_last_notify_time) > (watchdog_secs / 2):
                 if hb_ok:
-                    self._log.debug("Watchdog heartbeat")
+                    self._log.debug("sd_notify() watchdog heartbeat")
                     systemd_notifier.notify("WATCHDOG=1")
                     watchdog_last_notify_time = time.time()
                 else:
                     self._log.debug("Won't heartbeat - state bad")
+                    if (time.time() - watchdog_last_notify_time) > (watchdog_secs + 1):
+                        self._log.warn("Over watchdog limit, but not killed by systemd!  Maybe you are using an old version of systemd...")
+                        self._log.warn("and need to set WatchdogSec= in the systemd unit file (edit /etc/systemd/systemd/emonhub.service)?")
+                        self._log.warn("and then 'systemctl daemon-reload'?")
+
 
 
             # Sleep until next iteration
