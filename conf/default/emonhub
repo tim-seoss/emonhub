@@ -48,4 +48,4 @@ EMONHUB_LOG=/var/log/emonhub/emonhub.log
 # If you are using $EMONHUB_LOG, then you must ensure this
 # log file exists and is writable by the emonhub user.
 #
-SYSTEMD_EXTRA_ARGS="--logfile ${EMONHUB_LOG}"
+SYSTEMD_EXTRA_ARGS="--logfile /var/log/emonhub/emonhub.log"
