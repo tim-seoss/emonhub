@@ -22,11 +22,11 @@ EMONHUB_PATH=/usr/share/emonhub/
 EMONHUB_CONFIG=/home/pi/data/emonhub.conf
 
 # Specify the full log file path:
-# (not used with systemd see below for alternative)
+# (see below for systemd note)
 EMONHUB_LOG=/var/log/emonhub/emonhub.log
 
-# With systemd, emonhub uses the journald service to log
-# messages by default, you can use commands such as:
+# With systemd, emonhub can use the journald service to log
+# messages, you can then use commands such as:
 #
 # journalctl -u emonhub -f
 #
@@ -36,14 +36,16 @@ EMONHUB_LOG=/var/log/emonhub/emonhub.log
 #
 # for more options.
 #
-# If you wish to override this, and still use a separate log
-# file, then you may use the commented out directive below
+# If you wish to use journald, and disable the EMONHUB_LOG,
+# then place an entry like:
 #
-# It's recommended that you place this directive in
-# /etc/default/emonhub.local to prevent the emonhub git
-# repository 'install' script clobbering your changes.
+# SYSTEMD_EXTRA_ARGS=""
 #
-# You should ensure this log file exists and is writable by
-# the emonhub user.
+# in /etc/default/emonhub.local to override the setting below
+# and prevent the emonhub git repository 'install' script
+# clobbering your changes in future.
 #
-#SYSTEMD_EXTRA_ARGS="--logfile /var/log/emonhub/emonhub.log"
+# If you are using $EMONHUB_LOG, then you must ensure this
+# log file exists and is writable by the emonhub user.
+#
+SYSTEMD_EXTRA_ARGS="--logfile ${EMONHUB_LOG}"
