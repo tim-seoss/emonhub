@@ -28,6 +28,8 @@ RestartSec=15s
 # This is recommended, but requires the python sdnotify package to be
 # available e.g. with the python-sdnotify Debian package for python 2.7
 Type=notify
+# Older systemd versions need this setting to enable watchdog functionality...
+WatchdogSec=30
 
 [Install]
 WantedBy=multi-user.target
